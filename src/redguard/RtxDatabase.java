@@ -70,9 +70,10 @@ public class RtxDatabase {
 
             byte[] audioBytes = null;
             int sampleRate = 11025;
+            int doubleSize = 0;
             if (hasAudio) {
-                Utils.readLittleEndianInt(input); // 1 for all creature sounds except #vi1, #vi2, and #vi3; related to sample rate
-                Utils.readLittleEndianInt(input); // 1 for all creature sounds except #vi1, #vi2, and #vi3; related to sample rate
+                doubleSize = Utils.readLittleEndianInt(input); // 1 for all 22050 sample rate sounds except #vi1, #vi2, #vi3, txx1, txx2
+                Utils.readLittleEndianInt(input); // same as above
                 sampleRate = Utils.readLittleEndianInt(input);
                 Utils.readLittleEndianInt(input); // always 100
                 Utils.readLittleEndianShort(input); // always 0
@@ -81,7 +82,7 @@ public class RtxDatabase {
                 input.readByte(); // always 0
                 audioBytes = Utils.readBytes(input, audioLength);
             }
-            rtxEntryMap.put(label, new RtxEntry(label, subtitle, audioBytes, sampleRate));
+            rtxEntryMap.put(label, new RtxEntry(label, subtitle, audioBytes, sampleRate, doubleSize));
         }
         input.close();
     }
@@ -106,13 +107,9 @@ public class RtxDatabase {
             if (entry.hasAudio()) {
                 int audioLength = entry.getAudioBytes().length;
                 int sampleRate = entry.getSampleRate();
-                if (label.equals("#vi1") || label.equals("#vi2") || label.equals("#vi3")) {
-                    Utils.writeLittleEndianInt(output, 0);
-                    Utils.writeLittleEndianInt(output, 0);
-                } else {
-                    Utils.writeLittleEndianInt(output, sampleRate == 22050 ? 1 : 0);
-                    Utils.writeLittleEndianInt(output, sampleRate == 22050 ? 1 : 0);
-                }
+                int doubleSize = entry.getDoubleSize() ? 1 : 0;
+                Utils.writeLittleEndianInt(output, doubleSize);
+                Utils.writeLittleEndianInt(output, doubleSize);
                 Utils.writeLittleEndianInt(output, sampleRate);
                 Utils.writeLittleEndianInt(output, 100);
                 Utils.writeLittleEndianShort(output, 0);
@@ -152,14 +149,14 @@ public class RtxDatabase {
         reader.close();
     }
 
-    public void loadAudioFolder(File audioFolder, boolean forRTX) throws UnsupportedAudioFileException, IOException {
+    public void loadAudioFolder(File audioFolder) throws UnsupportedAudioFileException, IOException {
         File[] audioFileArray = audioFolder.listFiles();
         if (audioFileArray == null) return;
         for (File audioFile : audioFileArray) {
             String filename = audioFile.getName();
             String labelStr = filename.substring(0, filename.lastIndexOf("."));
             RtxEntry rtxEntry = get(labelStr);
-            rtxEntry.loadAudioFromFile(audioFile, forRTX);
+            rtxEntry.loadAudioFromFile(audioFile);
         }
     }
 

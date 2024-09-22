@@ -35,6 +35,7 @@ public class INIEditor {
         window = new JFrame(TITLE);
         window.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         window.setMinimumSize(new Dimension(800, 600));
+        if (RedguardModManager.appIconImage != null) window.setIconImage(RedguardModManager.appIconImage);
 
         // Split GUI creation into sections
         createMenuBar();
@@ -102,6 +103,7 @@ public class INIEditor {
             }
         });
         bottomPanel.add(searchButton);
+        bottomPanel.add(Box.createHorizontalStrut(25));
 
         // Buttons
         ModManagerUtils.createButton(bottomPanel, "Load INI File", _ -> loadINIFile());
@@ -236,7 +238,13 @@ public class INIEditor {
         File fileToSave = ModManagerUtils.forceFileExtension(chooser.getSelectedFile(), ".INI");
         if (ModManagerUtils.confirmReplace(window, fileToSave)) {
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileToSave))) {
-                writer.write(getSelectedTextArea().getText());
+                String[] lineSplit = getSelectedTextArea().getText().split("\n");
+                for (int i = 0; i < lineSplit.length; i++) {
+                    writer.write(lineSplit[i]);
+                    if (i < lineSplit.length - 1) {
+                        writer.newLine();
+                    }
+                }
             } catch (IOException e) {
                 ModManagerUtils.showError(window, "Failed to save INI file: " + fileToSave.getPath());
             }

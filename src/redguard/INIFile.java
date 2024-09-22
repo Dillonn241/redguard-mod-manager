@@ -73,7 +73,13 @@ public class INIFile {
 
     public void writeINI(File fileToWrite) throws IOException {
         BufferedWriter writer = new BufferedWriter(new FileWriter(fileToWrite));
-        writer.write(getINIText());
+        String[] lineSplit = getINIText().split("\n");
+        for (int i = 0; i < lineSplit.length; i++) {
+            writer.write(lineSplit[i]);
+            if (i < lineSplit.length - 1) {
+                writer.newLine();
+            }
+        }
         writer.close();
     }
 

@@ -50,6 +50,7 @@ public class DialogueEditor {
         window = new JFrame(TITLE);
         window.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         window.setMinimumSize(new Dimension(800, 600));
+        if (RedguardModManager.appIconImage != null) window.setIconImage(RedguardModManager.appIconImage);
         subtitleFields = new ArrayList<>();
 
         // Split GUI creation into sections
@@ -203,6 +204,7 @@ public class DialogueEditor {
 
         // Play & stop audio button
         playStopButton = ModManagerUtils.createButton(bottomPanel, "▶", _ -> playOrStopSelectedAudio());
+        bottomPanel.add(Box.createHorizontalStrut(25));
 
         // Search bar and button for finding label or subtitle matches
         searchBar = new JTextField(10);
@@ -216,11 +218,13 @@ public class DialogueEditor {
             }
         });
         bottomPanel.add(searchButton);
+        bottomPanel.add(Box.createHorizontalStrut(25));
 
         // Buttons
-        ModManagerUtils.createButton(bottomPanel, "Save to Mod", _ -> saveToMod());
         ModManagerUtils.createButton(bottomPanel, "Add Entry", _ -> addRtxEntry());
         ModManagerUtils.createButton(bottomPanel, "Delete Entry", _ -> deleteSelectedRtxEntry());
+        bottomPanel.add(Box.createHorizontalStrut(25));
+        ModManagerUtils.createButton(bottomPanel, "Save to Mod", _ -> saveToMod());
     }
 
     /**

@@ -2,6 +2,7 @@ package modManager;
 
 import redguard.*;
 
+import javax.imageio.ImageIO;
 import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.*;
 import java.awt.*;
@@ -9,6 +10,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.*;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.*;
 import java.util.List;
 import java.util.logging.Logger;
@@ -39,6 +41,7 @@ public class RedguardModManager {
     private static Path gamePath;
 
     // GUI fields
+    public static Image appIconImage;
     private static JFrame window;
     private static ModTable modTable; // Table listing all the available mods
     private static JTextField nameField, versionField, authorField;
@@ -83,6 +86,15 @@ public class RedguardModManager {
 
         // Load common data files
         preloadFiles();
+
+        try {
+            URL iconURL = RedguardModManager.class.getClassLoader().getResource("icon.png");
+            if (iconURL != null) {
+                appIconImage = new ImageIcon(ImageIO.read(iconURL)).getImage();
+            }
+        } catch (IOException e) {
+            logger.warning("Failed to load app icon.");
+        }
 
         // Create GUI
         SwingUtilities.invokeLater(RedguardModManager::createAndShowGUI);
@@ -151,6 +163,7 @@ public class RedguardModManager {
                 saveAndExitProgram();
             }
         });
+        window.setIconImage(appIconImage);
 
         // GUI is complex enough to have separate methods for each section
         createMenuBar();
@@ -302,10 +315,10 @@ public class RedguardModManager {
 
         // Buttons
         ModManagerUtils.createButton(bottomPanel, "Add Mod", _ -> addMod());
-        bottomPanel.add(Box.createHorizontalStrut(10));
+        bottomPanel.add(Box.createHorizontalStrut(25));
         ModManagerUtils.createButton(bottomPanel, "Move Up", _ -> modTable.moveSelectedModUp());
         ModManagerUtils.createButton(bottomPanel, "Move Down", _ -> modTable.moveSelectedModDown());
-        bottomPanel.add(Box.createHorizontalStrut(10));
+        bottomPanel.add(Box.createHorizontalStrut(25));
         ModManagerUtils.createButton(bottomPanel, "Apply Changes", _ -> applyChanges());
     }
 
@@ -560,7 +573,7 @@ public class RedguardModManager {
                     // Get RTX audio changes
                     File audioFolder = getModPath(mod).resolve(RTX_AUDIO_FOLDER).toFile();
                     try {
-                        rtxDatabase.loadAudioFolder(audioFolder, true);
+                        rtxDatabase.loadAudioFolder(audioFolder);
                     } catch (UnsupportedAudioFileException | IOException e) {
                         ModManagerUtils.showError(window, "Failed to load selected mod's audio folder.");
                     }
@@ -665,7 +678,7 @@ public class RedguardModManager {
             if (audioFileArray != null && audioFileArray.length > 0) {
                 if (editor == null) editor = new DialogueEditor(rtxDatabase);
                 try {
-                    rtxDatabase.loadAudioFolder(audioFolder, false);
+                    rtxDatabase.loadAudioFolder(audioFolder);
                 } catch (UnsupportedAudioFileException | IOException e) {
                     ModManagerUtils.showError(window, "Failed to load selected mod's audio folder.");
                 }

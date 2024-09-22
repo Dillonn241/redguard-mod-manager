@@ -17,30 +17,29 @@ public class RtxEntry {
     private byte[] audioBytes;
     private AudioFormat audioFormat;
 
-    // Signed for export to WAV, unsigned for export to RTX
-    public static final AudioFormat AUDIO_FORMAT_11025_WAV = new AudioFormat(11025, 4, 1, true, false);
-    public static final AudioFormat AUDIO_FORMAT_11025_RTX = new AudioFormat(11025, 4, 1, false, false);
-    public static final AudioFormat AUDIO_FORMAT_11025_FROM16BITSIZE = new AudioFormat(11025, 8, 1, false, false);
-    public static final AudioFormat AUDIO_FORMAT_22050_WAV = new AudioFormat(22050, 16, 1, true, false);
-    public static final AudioFormat AUDIO_FORMAT_22050_RTX = new AudioFormat(22050, 16, 1, false, false);
-    public static final AudioFormat AUDIO_FORMAT_22050_CREATUREALT = new AudioFormat(22050, 8, 1, false, false);
+    public static final AudioFormat AUDIO_FORMAT_11025 = new AudioFormat(11025, 4, 1, false, false);
+    public static final AudioFormat AUDIO_FORMAT_11025_FROM16BIT = new AudioFormat(11025, 8, 1, false, false);
+    public static final AudioFormat AUDIO_FORMAT_22050 = new AudioFormat(22050, 8, 1, false, false);
+    public static final AudioFormat AUDIO_FORMAT_22050_DOUBLE = new AudioFormat(22050, 16, 1, false, false);
 
-    public RtxEntry(String label, String subtitle, byte[] audioBytes, int sampleRate) {
+    public RtxEntry(String label, String subtitle, byte[] audioBytes, int sampleRate, int doubleSize) {
         this.label = label;
         this.subtitle = subtitle;
         this.audioBytes = audioBytes;
         audioFormat = null;
         if (hasAudio()) {
-            if (label.equals("#vi1") || label.equals("#vi2") || label.equals("#vi3")) {
-                audioFormat = AUDIO_FORMAT_22050_CREATUREALT;
+            if (doubleSize == 1) {
+                audioFormat = AUDIO_FORMAT_22050_DOUBLE;
+            } else if (sampleRate == 22050) {
+                audioFormat = AUDIO_FORMAT_22050;
             } else {
-                audioFormat = sampleRate == 22050 ? AUDIO_FORMAT_22050_WAV : AUDIO_FORMAT_11025_WAV;
+                audioFormat = AUDIO_FORMAT_11025;
             }
         }
     }
 
     public RtxEntry(String label, String subtitle) {
-        this(label, subtitle, null, 11025);
+        this(label, subtitle, null, 11025, 0);
     }
 
     public String getLabel() {
@@ -79,15 +78,31 @@ public class RtxEntry {
         return (int) audioFormat.getSampleRate();
     }
 
+    public boolean getDoubleSize() {
+        return audioFormat.getSampleRate() == 22050 && audioFormat.getSampleSizeInBits() == 16;
+    }
+
+    public AudioFormat externalAudioFormat() {
+        return new AudioFormat(audioFormat.getSampleRate(), audioFormat.getSampleSizeInBits(), 1, true, false);
+    }
+
     /**
      * Generate a new audio input stream based on the current audio bytes and format.
      * @return The new audio input stream
      */
     public AudioInputStream audioInputStream() {
         if (!hasAudio()) return null;
+        if (audioFormat == AUDIO_FORMAT_22050) {
+            AudioInputStream inputStream = new AudioInputStream(
+                    new ByteArrayInputStream(audioBytes),
+                    audioFormat,
+                    audioBytes.length / audioFormat.getFrameSize()
+            );
+            return AudioSystem.getAudioInputStream(externalAudioFormat(), inputStream);
+        }
         return new AudioInputStream(
                 new ByteArrayInputStream(audioBytes),
-                audioFormat,
+                externalAudioFormat(),
                 audioBytes.length / audioFormat.getFrameSize()
         );
     }
@@ -113,22 +128,21 @@ public class RtxEntry {
     /**
      * Load audio data from a file and replace the original audio bytes with it.
      * @param file The file with new audio data
-     * @param forRTX True if the data is going in the RTX file; false if it is to play in the editor and export to other formats like WAV
      * @throws UnsupportedAudioFileException The audio data was invalid in some way
      * @throws IOException A general IO error occurred
      */
-    public void loadAudioFromFile(File file, boolean forRTX) throws UnsupportedAudioFileException, IOException {
+    public void loadAudioFromFile(File file) throws UnsupportedAudioFileException, IOException {
         // Convert to compatible format, choosing the higher sample rate only if provided
         AudioInputStream input = AudioSystem.getAudioInputStream(file);
         AudioFormat oldFormat = input.getFormat();
-        if (forRTX) {
-            audioFormat = oldFormat.getSampleRate() == 22050 ? AUDIO_FORMAT_22050_RTX :
-                    oldFormat.getSampleSizeInBits() == 16 ? AUDIO_FORMAT_11025_FROM16BITSIZE : AUDIO_FORMAT_11025_RTX;
+        if (oldFormat.getSampleRate() == 22050) {
+            audioFormat = AUDIO_FORMAT_22050_DOUBLE;
+        } else if (oldFormat.getSampleSizeInBits() == 16) {
+            audioFormat = AUDIO_FORMAT_11025_FROM16BIT;
         } else {
-            audioFormat = oldFormat.getSampleRate() == 22050 ? AUDIO_FORMAT_22050_WAV :
-                    oldFormat.getSampleSizeInBits() == 16 ? AUDIO_FORMAT_11025_FROM16BITSIZE : AUDIO_FORMAT_11025_WAV;
+            audioFormat = AUDIO_FORMAT_11025;
         }
-        AudioInputStream convertedInput = AudioSystem.getAudioInputStream(audioFormat, input);
+        AudioInputStream convertedInput = AudioSystem.getAudioInputStream(externalAudioFormat(), input);
 
         // Save audio bytes
         int numBytes = (int) (convertedInput.getFrameLength() * audioFormat.getFrameSize());
@@ -136,5 +150,7 @@ public class RtxEntry {
         if (convertedInput.read(audioBytes) != numBytes) {
             logger.warning("End of file reached early while reading " + numBytes + " bytes from audio input stream.");
         }
+        input.close();
+        convertedInput.close();
     }
 }

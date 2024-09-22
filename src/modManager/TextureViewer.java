@@ -52,6 +52,7 @@ public class TextureViewer {
         window = new JFrame(TITLE);
         window.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         window.setMinimumSize(new Dimension(800, 600));
+        if (RedguardModManager.appIconImage != null) window.setIconImage(RedguardModManager.appIconImage);
 
         JPanel rightPanel = new JPanel(new BorderLayout());
         window.add(rightPanel, BorderLayout.CENTER);

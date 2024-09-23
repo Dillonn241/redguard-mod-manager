@@ -9,22 +9,29 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static modManager.RedguardModManager.logger;
 
 public class INIEditor {
     private static final String TITLE = "Redguard INI Editor";
 
+    // INI handling
+    private final Map<String, INIFile> originalINIs;
+    private INIFile currentINIFile;
+
     // GUI fields
     private JFrame window;
     private JMenuItem saveINIItem;
     private JTabbedPane tabbedPane;
     private List<INIFile> iniFileTabs;
-    private INIFile currentINIFile;
     private JTextField searchBar;
 
     public INIEditor() {
+        originalINIs = new HashMap<>();
+        currentINIFile = null;
         createAndShowGUI();
     }
 
@@ -215,12 +222,12 @@ public class INIEditor {
 
     private void loadINIFile() {
         String[] iniFiles = RedguardModManager.INI_FILES;
-        String selection = (String) JOptionPane.showInputDialog(window, "Choose an INI file to load.",
-                "Load INI File", JOptionPane.PLAIN_MESSAGE, null, iniFiles, iniFiles[0]);
+        String selection = (String) JOptionPane.showInputDialog(window, "Choose an INI file to load.", "Load INI File", JOptionPane.PLAIN_MESSAGE, null, iniFiles, iniFiles[0]);
         if (selection == null) return;
         INIFile iniFile = new INIFile(selection);
         try {
             iniFile.readINI(RedguardModManager.getBackupFile(selection));
+            originalINIs.put(selection, iniFile);
         } catch (IOException e) {
             ModManagerUtils.showError(window, "Failed to read INI file from backup: " + selection);
         }
@@ -264,19 +271,22 @@ public class INIEditor {
             INIFile iniFile = new INIFile(name);
             try {
                 iniFile.readINI(RedguardModManager.getBackupFile(name));
+                originalINIs.put(name, iniFile);
             } catch (IOException e) {
                 ModManagerUtils.showError(window, "Failed to read INI file from backup: " + name);
             }
-            iniFile.applyChanges(iniChangedFile);
-            addTab(iniFile);
+            INIFile changedINIFile = new INIFile(iniFile);
+            changedINIFile.applyChanges(iniChangedFile);
+            addTab(changedINIFile);
         }
     }
 
     private void saveChangesFile(File fileToSave) {
         INIChanges iniChanges = new INIChanges();
         for (int i = 0; i < iniFileTabs.size(); i++) {
-            INIFile originalINIFile = iniFileTabs.get(i);
-            INIFile changedINIFile = new INIFile(originalINIFile.getName());
+            String iniName = iniFileTabs.get(i).getName();
+            INIFile originalINIFile = originalINIs.get(iniName);
+            INIFile changedINIFile = new INIFile(iniName);
             changedINIFile.readINI(getTextAreaAt(i).getText());
             iniChanges.addINIChangeFile(changedINIFile.diff(originalINIFile));
         }
@@ -288,8 +298,7 @@ public class INIEditor {
     }
 
     private void saveToMod() {
-        Mod mod = RedguardModManager.showModSelectionDialog(window, "Choose a mod to save INI changes.",
-                "Save to Mod");
+        Mod mod = RedguardModManager.showModSelectionDialog(window, "Choose a mod to save INI changes.", "Save to Mod");
         if (mod == null) return;
         File changesFile = RedguardModManager.getModPath(mod).resolve(RedguardModManager.INI_CHANGES).toFile();
         saveChangesFile(changesFile);

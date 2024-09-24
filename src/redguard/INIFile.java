@@ -46,7 +46,7 @@ public class INIFile {
     }
 
     public void readINI(File fileToRead) throws IOException {
-        BufferedReader reader = new BufferedReader(new FileReader(fileToRead));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(fileToRead), "IBM437"));
         String str = reader.lines().collect(Collectors.joining("\n"));
         reader.close();
         readINI(str);
@@ -72,7 +72,7 @@ public class INIFile {
     }
 
     public void writeINI(File fileToWrite) throws IOException {
-        BufferedWriter writer = new BufferedWriter(new FileWriter(fileToWrite));
+        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(fileToWrite), "IBM437"));
         String[] lineSplit = getINIText().split("\n");
         for (int i = 0; i < lineSplit.length; i++) {
             writer.write(lineSplit[i]);

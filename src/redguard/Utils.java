@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.stream.Collectors;
 
 import static modManager.RedguardModManager.logger;
 
@@ -30,7 +31,8 @@ public class Utils {
     }
 
     public static String readString(DataInputStream input, int n) throws IOException {
-        return new String(readBytes(input, n));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(readBytes(input, n)), "IBM437"));
+        return reader.lines().collect(Collectors.joining("\n"));
     }
 
     public static void writeLittleEndianShort(DataOutputStream output, int num) throws IOException {
@@ -39,6 +41,16 @@ public class Utils {
 
     public static void writeLittleEndianInt(DataOutputStream output, int num) throws IOException {
         output.write(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(num).array());
+    }
+
+    public static void writeString(DataOutputStream output, String str) throws IOException {
+        ByteArrayOutputStream byteStream = new ByteArrayOutputStream(str.length());
+        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(byteStream, "IBM437"));
+        writer.write(str);
+        writer.close();
+        byte[] strBytes = byteStream.toByteArray();
+        byteStream.close();
+        output.write(strBytes);
     }
 
     public static int byteArrayToInt(byte[] array, boolean littleEndian) {

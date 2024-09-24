@@ -96,13 +96,13 @@ public class RtxDatabase {
             RtxEntry entry = rtxEntryList.get(i);
             String label = entry.getLabel();
             int subtitleLength = entry.subtitleLength();
-            output.writeBytes(label);
+            Utils.writeString(output, label);
             output.writeInt(entry.length());
             totalBytes += 8;
             entryPositions[i] = totalBytes;
             output.write(entry.hasAudio() ? AUDIO_YES : AUDIO_NO);
             Utils.writeLittleEndianInt(output, subtitleLength);
-            output.writeBytes(entry.getSubtitle());
+            Utils.writeString(output, entry.getSubtitle());
             totalBytes += 6 + subtitleLength;
             if (entry.hasAudio()) {
                 int audioLength = entry.getAudioBytes().length;

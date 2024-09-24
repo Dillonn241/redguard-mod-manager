@@ -46,7 +46,7 @@ public class Utils {
     public static void writeString(DataOutputStream output, String str) throws IOException {
         ByteArrayOutputStream byteStream = new ByteArrayOutputStream(str.length());
         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(byteStream, "IBM437"));
-        writer.write(str);
+        writer.write(fixUnsupportedCharacters(str));
         writer.close();
         byte[] strBytes = byteStream.toByteArray();
         byteStream.close();
@@ -93,5 +93,13 @@ public class Utils {
 
     public static String validFilename(String str) {
         return str.replaceAll("[\\\\/:*\"<>|]", "_");
+    }
+
+    public static String fixUnsupportedCharacters(String str) {
+        return str.replace('Á', 'á')
+                .replace('É', 'é')
+                .replace('Í', 'í')
+                .replace('Ó', 'ó')
+                .replace('Ú', 'ú');
     }
 }

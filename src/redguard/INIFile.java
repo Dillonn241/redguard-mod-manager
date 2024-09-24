@@ -73,7 +73,8 @@ public class INIFile {
 
     public void writeINI(File fileToWrite) throws IOException {
         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(fileToWrite), "IBM437"));
-        String[] lineSplit = getINIText().split("\n");
+        String fixedStr = Utils.fixUnsupportedCharacters(getINIText());
+        String[] lineSplit = fixedStr.split("\n");
         for (int i = 0; i < lineSplit.length; i++) {
             writer.write(lineSplit[i]);
             if (i < lineSplit.length - 1) {
